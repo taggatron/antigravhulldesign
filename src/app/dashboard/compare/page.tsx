@@ -14,27 +14,30 @@ function BaselineHull() {
   const meshRef = useRef<THREE.Mesh>(null);
 
   const geometry = useMemo(() => {
-    // Standard unoptimized hull
     const l = 10;
     const b = 3;
     const d = 1.5;
-    const geo = new THREE.BoxGeometry(b, d, l, 32, 16, 64);
+    const geo = new THREE.BoxGeometry(2, 1, 6, 16, 8, 32);
     
     const pos = geo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       let x = pos.getX(i);
       let y = pos.getY(i);
       let z = pos.getZ(i);
-      const nz = z / (l / 2);
-      if (nz > 0) x *= (1 - nz * 0.5); // Less sharp bow
+      const nz = z / 3;
+      if (nz > 0) x *= (1 - nz * 0.8);
       if (nz < 0) {
-        x *= (1 - Math.abs(nz) * 0.2); // Less stern taper
-        y += Math.abs(nz) * (d * 0.1);
+        x *= (1 - Math.abs(nz) * 0.4);
+        y += Math.abs(nz) * 0.3;
       }
-      if ((y / (d / 2)) < 0) {
-        x *= (1 - Math.abs(y / (d / 2)) * 0.6);
+      const ny = y / 0.5;
+      if (ny < 0) x *= (1 - Math.abs(ny) * 0.5);
+      
+      if (isNaN(x) || isNaN(y) || isNaN(z)) {
+        pos.setXYZ(i, 0, 0, 0);
+      } else {
+        pos.setXYZ(i, x, y, z);
       }
-      pos.setXYZ(i, x, y, z);
     }
     geo.computeVertexNormals();
     return geo;
@@ -64,23 +67,32 @@ function CurrentHull() {
   const meshRef = useRef<THREE.Mesh>(null);
 
   const geometry = useMemo(() => {
-    const l = length / 10;
-    const b = beam / 5;
-    const d = draft / 2;
+    const l = Math.max(0.1, length / 10);
+    const b = Math.max(0.1, beam / 5);
+    const d = Math.max(0.1, draft / 2);
     const geo = new THREE.BoxGeometry(b, d, l, 64, 32, 128);
     const pos = geo.attributes.position;
+    const halfL = l / 2 || 1;
+    const halfD = d / 2 || 1;
+
     for (let i = 0; i < pos.count; i++) {
       let x = pos.getX(i);
       let y = pos.getY(i);
       let z = pos.getZ(i);
-      const nz = z / (l / 2);
+      const nz = z / halfL;
       if (nz > 0) x *= (1 - (nz * (bowSharpness / 100)));
       if (nz < 0) {
         x *= (1 - Math.abs(nz) * (sternTaper / 100));
         y += Math.abs(nz) * (d * 0.2);
       }
-      if ((y / (d / 2)) < 0) x *= (1 - Math.abs(y / (d / 2)) * 0.8);
-      pos.setXYZ(i, x, y, z);
+      const ny = y / halfD;
+      if (ny < 0) x *= (1 - Math.abs(ny) * 0.8);
+      
+      if (isNaN(x) || isNaN(y) || isNaN(z)) {
+        pos.setXYZ(i, 0, 0, 0);
+      } else {
+        pos.setXYZ(i, x, y, z);
+      }
     }
     geo.computeVertexNormals();
     return geo;

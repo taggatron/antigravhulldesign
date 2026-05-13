@@ -13,19 +13,24 @@ function ProceduralHull() {
   // Procedurally generate hull based on parameters
   const geometry = useMemo(() => {
     // Start with a basic box, scaled by length, beam, and draft.
-    const l = length / 10;
-    const b = beam / 5;
-    const d = draft / 2;
-    const geo = new THREE.BoxGeometry(b, d, l, 64, 32, 128); // Increased geometry resolution
+    const l = Math.max(0.1, length / 10);
+    const b = Math.max(0.1, beam / 5);
+    const d = Math.max(0.1, draft / 2);
+    const geo = new THREE.BoxGeometry(b, d, l, 64, 32, 128); 
+    
+    if (!geo.attributes.position) return geo;
     
     const pos = geo.attributes.position;
+    const halfL = l / 2 || 1;
+    const halfD = d / 2 || 1;
+    
     for (let i = 0; i < pos.count; i++) {
       let x = pos.getX(i);
       let y = pos.getY(i);
       let z = pos.getZ(i);
 
       // Normalize z from -1 (stern) to 1 (bow)
-      const nz = z / (l / 2);
+      const nz = z / halfL;
 
       // Apply Bow Sharpness (taper width towards the bow)
       if (nz > 0) {
@@ -42,12 +47,16 @@ function ProceduralHull() {
       }
 
       // V-shape hull logic (bottom gets narrower)
-      const ny = (y / (d / 2)); // 1 is top, -1 is bottom
+      const ny = y / halfD; // 1 is top, -1 is bottom
       if (ny < 0) {
         x *= (1 - Math.abs(ny) * 0.8);
       }
 
-      pos.setXYZ(i, x, y, z);
+      if (isNaN(x) || isNaN(y) || isNaN(z)) {
+        pos.setXYZ(i, 0, 0, 0);
+      } else {
+        pos.setXYZ(i, x, y, z);
+      }
     }
 
     geo.computeVertexNormals();
