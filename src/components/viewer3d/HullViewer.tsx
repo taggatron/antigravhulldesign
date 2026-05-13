@@ -12,17 +12,24 @@ function ProceduralHull() {
 
   // Procedurally generate hull based on parameters
   const geometry = useMemo(() => {
+    // Safety check for store values being undefined or NaN
+    const safeLength = Number(length) || 50;
+    const safeBeam = Number(beam) || 10;
+    const safeDraft = Number(draft) || 3;
+    const safeBow = Number(bowSharpness) || 50;
+    const safeTaper = Number(sternTaper) || 30;
+
     // Start with a basic box, scaled by length, beam, and draft.
-    const l = Math.max(0.1, length / 10);
-    const b = Math.max(0.1, beam / 5);
-    const d = Math.max(0.1, draft / 2);
+    const l = Math.max(0.1, safeLength / 10);
+    const b = Math.max(0.1, safeBeam / 5);
+    const d = Math.max(0.1, safeDraft / 2);
     const geo = new THREE.BoxGeometry(b, d, l, 64, 32, 128); 
     
     if (!geo.attributes.position) return geo;
     
     const pos = geo.attributes.position;
-    const halfL = l / 2 || 1;
-    const halfD = d / 2 || 1;
+    const halfL = l / 2;
+    const halfD = d / 2;
     
     for (let i = 0; i < pos.count; i++) {
       let x = pos.getX(i);
@@ -34,13 +41,13 @@ function ProceduralHull() {
 
       // Apply Bow Sharpness (taper width towards the bow)
       if (nz > 0) {
-        const factor = 1 - (nz * (bowSharpness / 100));
+        const factor = 1 - (nz * (safeBow / 100));
         x *= factor;
       }
 
       // Apply Stern Taper
       if (nz < 0) {
-        const factor = 1 - (Math.abs(nz) * (sternTaper / 100));
+        const factor = 1 - (Math.abs(nz) * (safeTaper / 100));
         x *= factor;
         // Lift the stern slightly
         y += Math.abs(nz) * (d * 0.2);

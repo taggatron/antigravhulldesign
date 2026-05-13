@@ -65,24 +65,29 @@ function BaselineHull() {
 function CurrentHull() {
   const { beam, length, draft, bowSharpness, sternTaper } = useHullStore();
   const meshRef = useRef<THREE.Mesh>(null);
-
   const geometry = useMemo(() => {
-    const l = Math.max(0.1, length / 10);
-    const b = Math.max(0.1, beam / 5);
-    const d = Math.max(0.1, draft / 2);
+    const safeLength = Number(length) || 50;
+    const safeBeam = Number(beam) || 10;
+    const safeDraft = Number(draft) || 3;
+    const safeBow = Number(bowSharpness) || 50;
+    const safeTaper = Number(sternTaper) || 30;
+
+    const l = Math.max(0.1, safeLength / 10);
+    const b = Math.max(0.1, safeBeam / 5);
+    const d = Math.max(0.1, safeDraft / 2);
     const geo = new THREE.BoxGeometry(b, d, l, 64, 32, 128);
     const pos = geo.attributes.position;
-    const halfL = l / 2 || 1;
-    const halfD = d / 2 || 1;
+    const halfL = l / 2;
+    const halfD = d / 2;
 
     for (let i = 0; i < pos.count; i++) {
       let x = pos.getX(i);
       let y = pos.getY(i);
       let z = pos.getZ(i);
       const nz = z / halfL;
-      if (nz > 0) x *= (1 - (nz * (bowSharpness / 100)));
+      if (nz > 0) x *= (1 - (nz * (safeBow / 100)));
       if (nz < 0) {
-        x *= (1 - Math.abs(nz) * (sternTaper / 100));
+        x *= (1 - Math.abs(nz) * (safeTaper / 100));
         y += Math.abs(nz) * (d * 0.2);
       }
       const ny = y / halfD;
@@ -100,7 +105,8 @@ function CurrentHull() {
 
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.position.y = Math.sin(state.clock.elapsedTime) * 0.05 + (draft / 4);
+      const safeDraft = Number(draft) || 3;
+      meshRef.current.position.y = Math.sin(state.clock.elapsedTime) * 0.05 + (safeDraft / 4);
     }
   });
 

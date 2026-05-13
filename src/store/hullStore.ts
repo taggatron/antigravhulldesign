@@ -26,7 +26,10 @@ export const useHullStore = create<HullState>((set) => ({
   sternTaper: 30,
   predictions: null,
   isPredicting: false,
-  setParam: (param, value) => set((state) => ({ ...state, [param]: value })),
+  setParam: (param, value) => set((state) => {
+    if (typeof value !== 'number' || isNaN(value)) return state;
+    return { ...state, [param]: value };
+  }),
   updatePredictions: (preds) => set({ predictions: preds, isPredicting: false }),
   setPredicting: (val) => set({ isPredicting: val })
 }));

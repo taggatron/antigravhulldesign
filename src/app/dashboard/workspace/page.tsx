@@ -34,12 +34,17 @@ export default function Dashboard() {
       }
     } catch (e) {
       setTimeout(() => {
-        const drag_coeff = 0.04 * (beam / length) + 0.01 * (draft / length) - 0.005 * bowSharpness;
+        const sLength = Number(length) || 50;
+        const sBeam = Number(beam) || 10;
+        const sDraft = Number(draft) || 3;
+        const sBow = Number(bowSharpness) || 50;
+        
+        const drag_coeff = 0.04 * (sBeam / Math.max(1, sLength)) + 0.01 * (sDraft / Math.max(1, sLength)) - 0.005 * (sBow / 100);
         updatePredictions({
-          drag_coefficient: Number(Math.max(0.01, drag_coeff).toFixed(4)),
-          wave_resistance: Number((drag_coeff * 1.5).toFixed(4)),
-          efficiency_score: Number((100 - (drag_coeff * 1000)).toFixed(1)),
-          top_speed_estimate: Number((30 + (bowSharpness * 0.1) - (drag_coeff * 50)).toFixed(1))
+          drag_coefficient: Number(Math.max(0.001, drag_coeff).toFixed(4)),
+          wave_resistance: Number(Math.max(0.001, drag_coeff * 1.5).toFixed(4)),
+          efficiency_score: Number(Math.max(1, 100 - (drag_coeff * 1000)).toFixed(1)),
+          top_speed_estimate: Number(Math.max(1, 30 + (sBow * 0.1) - (drag_coeff * 50)).toFixed(1))
         });
       }, 500);
     }
@@ -171,7 +176,7 @@ function MetricBox({ label, value, loading, trend, icon }: { label: string, valu
         {icon}
       </div>
       <p className="text-xl font-mono font-medium text-white flex items-center gap-2">
-        {value}
+        {typeof value === 'number' && isNaN(value) ? 'ERR' : value}
         {trend === 'up' && <span className="text-emerald-400 text-sm">↑</span>}
         {trend === 'down' && <span className="text-blue-400 text-sm">↓</span>}
       </p>
@@ -193,7 +198,14 @@ function ControlSlider({ label, value, min, max, step = 1, unit = "", onChange }
         min={min}
         max={max}
         step={step}
-        onValueChange={(vals) => onChange(vals[0])}
+        onValueChange={(vals) => {
+          if (vals && vals.length > 0) {
+            const v = Number(vals[0]);
+            if (!isNaN(v)) {
+              onChange(v);
+            }
+          }
+        }}
         className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-4 [&_[role=slider]]:border-primary [&_[role=slider]]:shadow-[0_0_10px_rgba(var(--primary),0.5)] [&_[role=slider]]:w-4 [&_[role=slider]]:h-4"
       />
     </div>
