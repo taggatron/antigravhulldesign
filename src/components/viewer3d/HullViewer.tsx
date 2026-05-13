@@ -3,7 +3,7 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, Grid, ContactShadows } from "@react-three/drei";
 import { useHullStore } from "@/store/hullStore";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import * as THREE from "three";
 
 function ProceduralHull() {
@@ -53,6 +53,13 @@ function ProceduralHull() {
     geo.computeVertexNormals();
     return geo;
   }, [beam, length, draft, bowSharpness, sternTaper]);
+
+  // Prevent memory leaks by disposing of old geometries
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
 
   useFrame((state) => {
     if (meshRef.current) {

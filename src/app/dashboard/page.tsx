@@ -46,9 +46,13 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (mounted) {
+    if (!mounted) return;
+    
+    const timeoutId = setTimeout(() => {
       runPrediction();
-    }
+    }, 150);
+    
+    return () => clearTimeout(timeoutId);
   }, [mounted, beam, length, draft, bowSharpness, sternTaper]);
 
   if (!mounted) return null;
