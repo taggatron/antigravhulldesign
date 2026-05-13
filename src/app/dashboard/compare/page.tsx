@@ -144,7 +144,7 @@ export default function ComparePage() {
             <Canvas camera={{ position: [10, 5, 10], fov: 45 }} shadows>
               <ambientLight intensity={0.2} />
               <spotLight position={[10, 20, 10]} intensity={1} castShadow />
-              <Environment preset="city" />
+              <Environment files="/env/potsdamer_platz_4k.hdr" />
               <BaselineHull />
               <Grid position={[0, 0, 0]} infiniteGrid cellColor="#333" sectionColor="#444" fadeDistance={20} />
               <OrbitControls makeDefault minDistance={5} maxDistance={50} />
@@ -171,7 +171,7 @@ export default function ComparePage() {
               <ambientLight intensity={0.2} />
               <spotLight position={[10, 20, 10]} intensity={2} color="#3b82f6" castShadow />
               <pointLight position={[-10, -10, -10]} color="#1d4ed8" intensity={5} />
-              <Environment preset="city" />
+              <Environment files="/env/potsdamer_platz_4k.hdr" />
               <CurrentHull />
               <Grid position={[0, 0, 0]} infiniteGrid cellColor="#1d4ed8" sectionColor="#3b82f6" fadeDistance={30} />
               <OrbitControls makeDefault minDistance={5} maxDistance={50} />

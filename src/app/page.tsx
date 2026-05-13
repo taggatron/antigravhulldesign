@@ -115,6 +115,7 @@ export default function LandingPage() {
                <ambientLight intensity={0.5} />
                <directionalLight position={[10, 10, 5]} intensity={1.5} />
                <pointLight position={[-10, -10, -10]} color="#1e40af" intensity={2} />
+               <Environment files="/env/potsdamer_platz_4k.hdr" />
                <HeroHull />
              </Canvas>
              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#020202]/50 to-[#020202]" />

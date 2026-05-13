@@ -135,7 +135,7 @@ export default function HullViewer({ showGrid = true }: { showGrid?: boolean }) 
         <pointLight position={[10, -10, 10]} color="#7e22ce" intensity={3} />
         
         {/* Environment mapping for reflections */}
-        <Environment preset="city" />
+        <Environment files="/env/potsdamer_platz_4k.hdr" />
         
         <ProceduralHull />
         <WaterPlane />
