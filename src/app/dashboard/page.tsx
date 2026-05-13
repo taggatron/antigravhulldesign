@@ -1,201 +1,147 @@
 "use client";
 
-import HullViewer from "@/components/viewer3d/HullViewer";
-import { useHullStore } from "@/store/hullStore";
-import { Slider } from "@/components/ui/slider";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { Activity, Clock, Folder, CheckCircle, ArrowUpRight, Plus, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Activity, Play, Download, Wand2, Zap, GaugeCircle, Move3d } from "lucide-react";
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
-export default function Dashboard() {
-  const { 
-    beam, length, draft, bowSharpness, sternTaper, 
-    setParam, predictions, updatePredictions, isPredicting, setPredicting 
-  } = useHullStore();
-
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const runPrediction = async () => {
-    setPredicting(true);
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${apiUrl}/api/predict?beam=${beam}&length=${length}&draft=${draft}&bow_sharpness=${bowSharpness}`);
-      if (res.ok) {
-        const data = await res.json();
-        updatePredictions(data);
-      } else {
-        throw new Error("API failed");
-      }
-    } catch (e) {
-      setTimeout(() => {
-        const drag_coeff = 0.04 * (beam / length) + 0.01 * (draft / length) - 0.005 * bowSharpness;
-        updatePredictions({
-          drag_coefficient: Number(Math.max(0.01, drag_coeff).toFixed(4)),
-          wave_resistance: Number((drag_coeff * 1.5).toFixed(4)),
-          efficiency_score: Number((100 - (drag_coeff * 1000)).toFixed(1)),
-          top_speed_estimate: Number((30 + (bowSharpness * 0.1) - (drag_coeff * 50)).toFixed(1))
-        });
-      }, 500);
-    }
-  };
-
-  useEffect(() => {
-    if (!mounted) return;
-    
-    const timeoutId = setTimeout(() => {
-      runPrediction();
-    }, 150);
-    
-    return () => clearTimeout(timeoutId);
-  }, [mounted, beam, length, draft, bowSharpness, sternTaper]);
-
-  if (!mounted) return null;
-
+export default function DashboardOverview() {
   return (
-    <div className="h-full flex p-5 gap-6">
-      {/* Sidebar Controls */}
-      <div className="w-[380px] shrink-0 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
+    <div className="p-8 h-full overflow-y-auto custom-scrollbar">
+      <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Real-time Telemetry Card */}
-        <Card className="bg-[#0D0D0D]/80 backdrop-blur-2xl border-white/5 shadow-2xl rounded-2xl overflow-hidden relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-          <CardHeader className="pb-4 border-b border-white/5 bg-white/[0.01]">
-            <CardTitle className="text-sm font-medium tracking-wide flex items-center gap-2 text-white/90">
-              <Activity className="w-4 h-4 text-primary" />
-              Live Telemetry
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">Instant ML surrogate model predictions</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-5">
-            <div className="grid grid-cols-2 gap-3">
-              <MetricBox 
-                label="Drag Coeff (Cd)" 
-                value={predictions?.drag_coefficient || "..."} 
-                loading={isPredicting}
-                trend="down"
-                icon={<GaugeCircle className="w-3 h-3 text-white/40" />}
-              />
-              <MetricBox 
-                label="Efficiency" 
-                value={predictions?.efficiency_score ? `${predictions.efficiency_score}/100` : "..."} 
-                loading={isPredicting}
-                trend="up"
-                icon={<Zap className="w-3 h-3 text-white/40" />}
-              />
-              <MetricBox 
-                label="Wave Resistance" 
-                value={predictions?.wave_resistance || "..."} 
-                loading={isPredicting}
-              />
-              <MetricBox 
-                label="Est. Top Speed" 
-                value={predictions?.top_speed_estimate ? `${predictions.top_speed_estimate} kn` : "..."} 
-                loading={isPredicting}
-                trend="up"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Morphing Controls */}
-        <Card className="bg-[#0D0D0D]/80 backdrop-blur-2xl border-white/5 shadow-2xl rounded-2xl flex-1 flex flex-col relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-          <CardHeader className="pb-4 border-b border-white/5 bg-white/[0.01]">
-            <CardTitle className="text-sm font-medium tracking-wide flex items-center gap-2 text-white/90">
-              <Move3d className="w-4 h-4 text-purple-400" />
-              Geometry Morphing
-            </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">Adjust hull parameters in real-time</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-7 flex-1 overflow-y-auto">
-            <ControlSlider label="Length (LOA)" value={length} min={20} max={150} onChange={(v) => setParam('length', v)} unit="m" />
-            <ControlSlider label="Beam Width" value={beam} min={5} max={40} onChange={(v) => setParam('beam', v)} unit="m" />
-            <ControlSlider label="Draft" value={draft} min={1} max={15} step={0.5} onChange={(v) => setParam('draft', v)} unit="m" />
-            <ControlSlider label="Bow Sharpness" value={bowSharpness} min={0} max={100} onChange={(v) => setParam('bowSharpness', v)} unit="%" />
-            <ControlSlider label="Stern Taper" value={sternTaper} min={0} max={100} onChange={(v) => setParam('sternTaper', v)} unit="%" />
-          </CardContent>
-        </Card>
-
-      </div>
-
-      {/* Main 3D View */}
-      <div className="flex-1 flex flex-col gap-6 min-w-0">
-        <div className="flex-1 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(var(--primary),0.1)] border border-white/5 bg-[#050505] relative group">
-          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-          <HullViewer />
-        </div>
-        
-        {/* Bottom Action Bar */}
-        <div className="h-16 bg-[#0D0D0D]/80 backdrop-blur-2xl border border-white/5 rounded-2xl flex items-center justify-between px-6 shadow-xl shrink-0">
-          <div className="flex gap-3">
-            <Button className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:shadow-[0_0_25px_rgba(var(--primary),0.5)] transition-all border-0 h-9">
-              <Play className="w-4 h-4 mr-2 fill-current" />
-              Queue High-Fi CFD
-            </Button>
-            <Button variant="outline" className="border-white/10 hover:bg-white/[0.05] h-9 text-slate-300">
-              <Wand2 className="w-4 h-4 mr-2 text-purple-400" />
-              Auto-Optimize
-            </Button>
+        {/* Header */}
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Welcome back, Engineer</h1>
+            <p className="text-slate-400">Here's what's happening with your hull designs today.</p>
           </div>
-          <Button variant="ghost" className="text-muted-foreground hover:text-white h-9">
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </Button>
+          <Link href="/dashboard/workspace">
+            <Button className="bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+              <Plus className="w-4 h-4 mr-2" />
+              New Design
+            </Button>
+          </Link>
+        </div>
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-4 gap-6">
+          <KpiCard title="Active Projects" value="4" trend="+1 this week" icon={<Folder className="w-5 h-5" />} />
+          <KpiCard title="CFD Simulations" value="12" trend="3 running now" icon={<Activity className="w-5 h-5 text-blue-400" />} />
+          <KpiCard title="Compute Used" value="48.5h" trend="15h remaining" icon={<Clock className="w-5 h-5 text-purple-400" />} />
+          <KpiCard title="Avg Efficiency" value="84%" trend="+2% vs avg" icon={<CheckCircle className="w-5 h-5 text-emerald-400" />} />
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-3 gap-6">
+          
+          {/* Recent Projects List */}
+          <div className="col-span-2 bg-[#0A0A0A]/80 border border-white/5 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-medium text-white">Recent Designs</h2>
+              <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300">View all</Button>
+            </div>
+            
+            <div className="space-y-4">
+              <ProjectRow name="Project Alpha - Fast Ferry" date="Updated 2h ago" status="Simulating" score={82} />
+              <ProjectRow name="Oceanic Cargo V3" date="Updated yesterday" status="Optimized" score={94} />
+              <ProjectRow name="Regatta Hull Concept" date="Updated 3 days ago" status="Draft" score={65} />
+              <ProjectRow name="Patrol Vessel X1" date="Updated 1 week ago" status="Complete" score={88} />
+            </div>
+          </div>
+
+          {/* AI Insights & Compute Usage */}
+          <div className="space-y-6">
+            <div className="bg-gradient-to-br from-blue-900/20 to-transparent border border-blue-500/20 rounded-2xl p-6 shadow-[0_0_30px_rgba(59,130,246,0.05)]">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </div>
+                <h2 className="text-sm font-medium text-blue-400 uppercase tracking-wider">AI Insight</h2>
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                Based on your recent iterations, adjusting the <strong>stern taper</strong> on "Oceanic Cargo" by 5% could yield a 2.4% reduction in wake turbulence.
+              </p>
+              <Button size="sm" className="w-full bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20">
+                Apply to Workspace
+              </Button>
+            </div>
+
+            <div className="bg-[#0A0A0A]/80 border border-white/5 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
+              <h2 className="text-lg font-medium text-white mb-6">Compute Usage</h2>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-slate-400">OpenFOAM Engine</span>
+                    <span className="text-white font-mono">32h / 100h</span>
+                  </div>
+                  <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 w-[32%]" />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-slate-400">ML Surrogate API</span>
+                    <span className="text-white font-mono">1.2k / 10k req</span>
+                  </div>
+                  <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 w-[12%]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
         </div>
       </div>
     </div>
   );
 }
 
-function MetricBox({ label, value, loading, trend, icon }: { label: string, value: string | number, loading?: boolean, trend?: 'up' | 'down', icon?: React.ReactNode }) {
+function KpiCard({ title, value, trend, icon }: any) {
   return (
-    <div className="bg-[#050505]/50 p-3.5 rounded-xl border border-white/[0.03] relative overflow-hidden group hover:border-white/[0.08] transition-colors">
-      <AnimatePresence>
-        {loading && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-primary/5 animate-pulse" 
-          />
-        )}
-      </AnimatePresence>
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">{label}</p>
-        {icon}
+    <div className="bg-[#0A0A0A]/80 border border-white/5 rounded-2xl p-6 shadow-xl backdrop-blur-xl relative overflow-hidden group hover:border-white/10 transition-colors">
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="flex justify-between items-start mb-4">
+        <div className="p-2 bg-white/[0.03] rounded-lg border border-white/5 shadow-inner">
+          {icon}
+        </div>
+        <span className="text-xs font-medium text-slate-400 bg-white/[0.03] px-2 py-1 rounded-full">{trend}</span>
       </div>
-      <p className="text-xl font-mono font-medium text-white flex items-center gap-2">
-        {value}
-        {trend === 'up' && <span className="text-emerald-400 text-sm">↑</span>}
-        {trend === 'down' && <span className="text-blue-400 text-sm">↓</span>}
-      </p>
+      <p className="text-3xl font-bold text-white mb-1 tracking-tight">{value}</p>
+      <p className="text-sm text-slate-400">{title}</p>
     </div>
   );
 }
 
-function ControlSlider({ label, value, min, max, step = 1, unit = "", onChange }: any) {
+function ProjectRow({ name, date, status, score }: any) {
   return (
-    <div className="space-y-3 group">
-      <div className="flex justify-between items-center">
-        <label className="text-xs font-medium text-slate-400 group-hover:text-slate-300 transition-colors uppercase tracking-wider">{label}</label>
-        <div className="bg-white/[0.03] border border-white/[0.05] px-2 py-0.5 rounded text-xs font-mono text-primary shadow-inner">
-          {value}{unit}
+    <Link href="/dashboard/workspace" className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/10 transition-all group cursor-pointer">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-lg bg-black border border-white/10 flex items-center justify-center shadow-inner overflow-hidden">
+           {/* Mock thumbnail */}
+           <div className="w-6 h-6 border-[1.5px] border-blue-500/50 rounded-sm transform rotate-45 scale-y-50"></div>
+        </div>
+        <div>
+          <h3 className="text-white font-medium group-hover:text-blue-400 transition-colors">{name}</h3>
+          <p className="text-xs text-slate-500">{date}</p>
         </div>
       </div>
-      <Slider
-        value={[value]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={(vals) => onChange(vals[0])}
-        className="[&_[role=slider]]:bg-white [&_[role=slider]]:border-4 [&_[role=slider]]:border-primary [&_[role=slider]]:shadow-[0_0_10px_rgba(var(--primary),0.5)] [&_[role=slider]]:w-4 [&_[role=slider]]:h-4"
-      />
-    </div>
+      <div className="flex items-center gap-6">
+        <div className="text-right">
+          <p className="text-sm font-medium text-white">{score}/100</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider">Efficiency</p>
+        </div>
+        <div className={`px-2.5 py-1 rounded-md text-xs font-medium border ${
+          status === 'Simulating' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
+          status === 'Optimized' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+          'bg-slate-500/10 text-slate-400 border-slate-500/20'
+        }`}>
+          {status}
+        </div>
+        <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" />
+      </div>
+    </Link>
   );
 }

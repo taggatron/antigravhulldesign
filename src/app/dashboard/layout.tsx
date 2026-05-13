@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Settings, Activity, Folder, Database, LayoutDashboard, PanelRightClose, PanelRightOpen, Sparkles } from "lucide-react";
+import { Box, Settings, Activity, Folder, Database, LayoutDashboard, PanelRightClose, PanelRightOpen, Sparkles, Move3d, GitCompare } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -8,10 +8,10 @@ import { useState } from "react";
 
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Projects', href: '/dashboard/projects', icon: Folder },
+  { name: 'Workspace', href: '/dashboard/workspace', icon: Move3d },
+  { name: 'Compare', href: '/dashboard/compare', icon: GitCompare },
   { name: 'Simulations', href: '/dashboard/simulations', icon: Activity },
-  { name: 'Hull Data', href: '/dashboard/data', icon: Database },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Data', href: '/dashboard/data', icon: Database },
 ];
 
 export default function DashboardLayout({
